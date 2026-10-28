@@ -88,6 +88,14 @@ Before developing `cmdtrace`, we considered existing tools that help users under
 | ExplainShell | Explains the components of shell commands. | `cmdtrace` focuses on estimating risk and presenting warnings alongside the likely action. |
 | `man` pages | Provide detailed documentation for commands and their options. | `cmdtrace` aims to provide a short, structured summary rather than replacing detailed documentation. |
 
+### Existing Tools
+
+- ShellCheck: https://www.shellcheck.net/
+- ShellCheck repository: https://github.com/koalaman/shellcheck
+- tldr: https://tldr.sh/
+- tldr repository: https://github.com/tldr-pages/tldr
+- ExplainShell: https://explainshell.com/
+
 ### Project Gap
 
 Existing tools provide useful functionality for shell-script checking, command examples, detailed documentation, and command explanations.
@@ -216,68 +224,89 @@ The current implementation uses Python's standard library. No additional Python 
 
 ## 5. Architecture
 
-The application follows a simple rule-based analysis workflow.
+The `cmdtrace` application follows a rule-based workflow. It accepts command text, checks the input, analyzes supported commands using predefined rules, and displays an impact report. The supplied command is never executed.
+
+### Architecture Flowchart
 
 ```mermaid
 flowchart TD
-    A[User enters command text] --> B[argparse]
-    B --> C[Check input]
-    C --> D[Detect complex syntax]
-    D --> E[Tokenize using shlex]
-    E --> F[Match predefined rules]
-    F --> G[Identify action and target]
-    G --> H[Estimate risk]
-    H --> I[Generate impact report]
-    I --> J[Display report in terminal]
+    A[User enters command] --> B[argparse processes input]
+    B --> C{Command provided?}
+
+    C -->|No| D[Display help instructions]
+    C -->|Yes| E[Check shell syntax]
+
+    E --> F{Complex syntax detected?}
+    F -->|Yes| G[Return UNKNOWN risk]
+    F -->|No| H{Variable expansion detected?}
+
+    H -->|Yes| I[Return UNKNOWN risk]
+    H -->|No| J[Parse using shlex]
+
+    J --> K{Parsing successful?}
+    K -->|No| L[Display parsing warning]
+    K -->|Yes| M[Match predefined command rules]
+
+    M --> N{Command supported?}
+    N -->|No| O[Return UNKNOWN risk]
+    N -->|Yes| P[Identify action and target]
+
+    P --> Q[Estimate risk and generate warning]
+    Q --> R[Display impact report]
+
+    G --> S[Display report]
+    I --> S
+    O --> S
+
+    S --> T[End]
+    D --> T
+    L --> T
+    R --> T
 ```
 
 ### Components
 
 | Component | Responsibility | File |
 |---|---|---|
-| Command-line interface | Accepts command text and provides help and version information. | `cmdtrace.py` |
-| Syntax checks | Detects selected complex shell syntax and variable patterns. | `cmdtrace.py` |
-| Command analyzer | Matches recognized commands against predefined rules. | `cmdtrace.py` |
-| Risk assessment | Assigns an estimated risk and creates warning messages. | `cmdtrace.py` |
-| Impact report | Formats the analysis result for terminal output. | `cmdtrace.py` |
-| Test suite | Verifies expected analyzer behavior. | `test_cmdtrace.py` |
+| Command-line interface | Accepts input and provides help and version information. | `cmdtrace.py` |
+| Syntax detection | Checks for selected shell operators and variable references. | `cmdtrace.py` |
+| Command parser | Uses `shlex.split()` to tokenize simple command text. | `cmdtrace.py` |
+| Rule matching | Matches recognized commands against predefined rules. | `cmdtrace.py` |
+| Risk assessment | Estimates risk based on the command, selected options, and targets. | `cmdtrace.py` |
+| Impact report | Displays the command, action, target, risk, warning, and execution status. | `cmdtrace.py` |
+| Automated testing | Tests expected behavior using Python's `unittest` framework. | `test_cmdtrace.py` |
 
-### How the Application Works
+### Different Command Scenarios
 
-1. The user supplies a command as a quoted string.
-2. `argparse` processes the command-line arguments.
-3. The application checks for selected complex shell syntax and variable expansion.
-4. `shlex.split()` tokenizes simple command input without executing it.
-5. The analyzer matches the command against predefined rules.
-6. The rules examine selected options and target arguments.
-7. The application assigns an estimated risk level and warning.
-8. The report is printed in the terminal.
+The application follows different paths depending on the command supplied by the user.
 
-### Example Output
+| Scenario | Example Input | Expected Behavior |
+|---|---|---|
+| Empty input | No command supplied | Displays help instructions. |
+| Recognized informational command | `pwd` | Identifies the action and generally assigns LOW risk. |
+| Recognized file operation | `mv file.txt ./temp/` | Identifies the move operation and assigns an estimated risk. |
+| Potentially destructive command | `rm -rf old_folder` | Identifies deletion and assigns HIGH risk. |
+| Security-sensitive operation | `chmod 777 file.txt` | Identifies a permission change and assigns HIGH risk. |
+| Unsupported command | `unknowncommand` | Returns UNKNOWN risk and explains that no matching rule exists. |
+| Complex shell syntax | `cat file.txt \| grep secret` | Returns UNKNOWN because pipelines are not fully analyzed. |
+| Variable expansion | `rm $FILE` | Returns UNKNOWN because the variable's value is not resolved. |
+| Invalid quotation | `cat "unfinished` | Reports a parsing warning. |
 
-Command:
+These examples describe the expected behavior of the current implementation. Actual results depend on the rules and checks defined in `cmdtrace.py`.
 
-```bash
-python3 cmdtrace.py "mv file.txt ./temp/"
-```
+### Data Flow
 
-Example report:
-
-```text
-=== cmdtrace: Command Impact Report ===
-Command:   mv file.txt ./temp/
-Action:    Move or rename files
-Target:    file.txt, ./temp/
-Risk:      MEDIUM
-Warning:   Files may be moved or an existing destination may be overwritten.
-Execution: Not performed.
-```
-
-The exact warning and classification depend on the rules in the current implementation.
+1. **Input:** The user supplies a command as a quoted string.
+2. **Validation:** The application checks whether input exists.
+3. **Syntax checks:** Selected complex shell operators and variable references are detected.
+4. **Parsing:** `shlex.split()` separates a simple command into tokens.
+5. **Rule matching:** The application checks whether the command has a predefined rule.
+6. **Analysis:** The matching rule identifies the likely action, target, and risk.
+7. **Reporting:** The application displays an impact report or an appropriate warning.
 
 ### Error and Unsupported Input Handling
 
-| Situation | Expected behavior |
+| Situation | Expected Behavior |
 |---|---|
 | No command is supplied | Displays usage instructions. |
 | Quotation marks are unmatched | Reports a parsing problem. |
@@ -287,9 +316,9 @@ The exact warning and classification depend on the rules in the current implemen
 
 ### Safety Approach
 
-The analyzer treats input as text and does not pass it to a shell for execution. This is intended to prevent the analysis process from performing the action described by the command.
+The analyzer treats input as text and does not pass it to a shell for execution. If it encounters unsupported commands or syntax it cannot reliably interpret, it returns an `UNKNOWN` result or a parsing warning rather than claiming that the command is safe.
 
-However, this does not make `cmdtrace` a complete security scanner or a guarantee that the command is safe to execute separately.
+The application does not fully interpret shell scripts, expand environment variables, or inspect the filesystem. Its risk classifications are estimates and should not be treated as a guarantee of safety.
 
 ---
 
@@ -410,7 +439,7 @@ The test suite checks:
 
 ### Expected Result
 
-The test suite included with this version contains 15 tests.
+The test suite prepared for this version contains 15 tests.
 
 A successful run should finish with a summary similar to:
 
