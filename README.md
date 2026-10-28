@@ -1,7 +1,7 @@
 
 # `cmdtrace` — Command Impact Predictor
 
-> `cmdtrace` analyzes shell commands and explains their likely action, target, and risk level before the user runs them.
+> `cmdtrace` is a Python command-line tool that analyzes shell command text and predicts its likely action, target, risk level, and potential consequences without executing the supplied command.
 
 **Team Members:** Om M Rane, Jitesh Vishwakarma  
 **Repository:** https://github.com/Ompro24/LInux-Command-Assignment  
@@ -9,50 +9,71 @@
 
 ---
 
+## Table of Contents
+
+1. [Problem Statement](#1-problem-statement)
+2. [Prior Art and Existing Solutions](#2-prior-art-and-existing-solutions)
+3. [Project Overview and Features](#3-project-overview-and-features)
+4. [Technology Stack](#4-technology-stack)
+5. [Architecture](#5-architecture)
+6. [Installation and Usage](#6-installation-and-usage)
+7. [Testing](#7-testing)
+8. [Limitations and Future Scope](#8-limitations-and-future-scope)
+9. [Team Members](#9-team-members)
+10. [References](#10-references)
+
+---
+
 ## 1. Problem Statement
 
 ### Problem
 
-Users often execute terminal commands without fully understanding their effects. Some commands only display information, while others can move, overwrite, or permanently delete files and directories. An unfamiliar command or incorrect file path can cause unwanted changes.
+Users frequently execute terminal commands without fully understanding their effects. Some commands only display information, while others can move, overwrite, change permissions, or permanently delete files and directories.
 
-Users may need to search online, read documentation, or inspect command options before running unfamiliar commands. This takes time and may still leave them uncertain about the command's impact.
+An unfamiliar command, an incorrect file path, or an unexpected command-line option can cause unwanted changes to files or the system.
+
+Users may need to consult documentation, search online, or inspect command options before executing unfamiliar commands. This takes time and may still leave them uncertain about the potential impact.
 
 ### Proposed Solution
 
-`cmdtrace` is a Python command-line tool that analyzes a shell command supplied as text and generates a command impact report.
+`cmdtrace` is a Python-based command-line application that analyzes a shell command supplied as text and generates a command impact report.
 
 The report includes:
-- The command entered by the user.
-- The likely action performed by the command.
-- The identified target or command arguments.
-- An estimated risk level.
-- A warning about possible consequences.
 
-The tool does not execute the supplied command. It uses predefined analysis rules to classify supported commands.
+- The original command supplied by the user.
+- The likely action associated with the command.
+- The identified target or relevant arguments.
+- An estimated risk level.
+- A warning describing possible consequences.
+- A statement confirming that the supplied command was not executed.
+
+The application uses predefined Python rules to analyze supported commands. It does not execute the command being analyzed.
 
 ### Example Problem Scenario
 
-A user wants to inspect the following command:
+Consider the following command:
 
 ```bash
 rm -rf ./temp
 ```
 
-Instead of executing it immediately, the user can pass it to `cmdtrace` for analysis:
+This command can recursively remove the specified directory and its contents. The `-f` option can suppress certain prompts and errors.
+
+Instead of executing the command immediately, a user can analyze it first:
 
 ```bash
 python3 cmdtrace.py "rm -rf ./temp"
 ```
 
-The tool is designed to identify the deletion operation, classify it as high risk, and display a warning before the user decides whether to run the original command.
+The application identifies the likely deletion operation, assigns a high estimated risk, and displays a warning.
 
 ### Why This Project Is Useful
 
 - Helps users understand unfamiliar terminal commands.
 - Highlights potentially destructive operations.
-- Provides a simple command impact report.
+- Provides a concise command impact report.
 - Encourages users to review commands before execution.
-- Demonstrates Python programming, command-line interfaces, input parsing, and unit testing.
+- Demonstrates Python programming, command-line interfaces, input parsing, rule-based analysis, and unit testing.
 
 ---
 
@@ -64,77 +85,108 @@ Before developing `cmdtrace`, we considered existing tools that help users under
 |---|---|---|
 | ShellCheck | Identifies common issues in shell scripts. | `cmdtrace` focuses on analyzing individual command strings and estimating their impact. |
 | tldr | Provides concise examples and explanations of command usage. | `cmdtrace` aims to produce an action, target, and risk report for supported commands. |
-| ExplainShell | Explains the components of shell commands. | `cmdtrace` aims to classify command risk and provide warnings in addition to identifying the likely action. |
-
-### Existing Tools
-
-- ShellCheck: https://www.shellcheck.net/
-- ShellCheck repository: https://github.com/koalaman/shellcheck
-- tldr: https://tldr.sh/
-- tldr repository: https://github.com/tldr-pages/tldr
-- ExplainShell: https://explainshell.com/
+| ExplainShell | Explains the components of shell commands. | `cmdtrace` focuses on estimating risk and presenting warnings alongside the likely action. |
+| `man` pages | Provide detailed documentation for commands and their options. | `cmdtrace` aims to provide a short, structured summary rather than replacing detailed documentation. |
 
 ### Project Gap
 
-These tools provide useful functionality for shell-script checking, command examples, and command explanations. `cmdtrace` focuses on a different, narrower task: generating a concise impact report with an estimated risk level before a command is executed.
+Existing tools provide useful functionality for shell-script checking, command examples, detailed documentation, and command explanations.
 
-The current prototype uses predefined rules rather than artificial intelligence or a complete shell parser.
+`cmdtrace` focuses on a narrower task: generating a concise impact report with an estimated risk level before the user decides whether to execute a command.
+
+The current implementation is rule-based. It does not use artificial intelligence or a complete shell parser.
 
 ---
 
-## 3. What We Are Building
+## 3. Project Overview and Features
 
 ### Project Overview
 
-We are building `cmdtrace`, a Python-based command-line application that accepts a shell command as a string and analyzes it without executing it.
+`cmdtrace` accepts a command as a string, examines its structure, matches supported commands against predefined rules, and generates a readable impact report.
 
-The program parses the input, identifies supported commands, determines their likely action and target information, assigns an estimated risk level, and displays a warning when appropriate.
+The application considers command names, selected options, and target arguments when assigning risk levels. It also identifies certain forms of complex shell syntax that it cannot reliably analyze.
 
 ### Main Features
 
-1. **Command Input:** Accepts a command string from the terminal.
-2. **Command Parsing:** Uses Python's `shlex` module to split the supplied command into parts.
-3. **Action Identification:** Identifies the likely operation for supported commands.
-4. **Target Identification:** Extracts relevant command arguments.
-5. **Risk Classification:** Assigns a predefined risk level.
-6. **Warning Messages:** Displays warnings about possible consequences.
-7. **Unsupported Command Handling:** Reports commands that do not have analysis rules.
-8. **Unit Testing:** Uses Python's `unittest` framework to check expected behavior.
+1. **Command Input:** Accepts command text through the terminal.
+2. **Command-Line Interface:** Uses `argparse` to handle input and provide help and version information.
+3. **Command Parsing:** Uses Python's `shlex` module to tokenize simple command strings.
+4. **Action Identification:** Identifies the likely operation for supported commands.
+5. **Target Identification:** Extracts relevant command arguments.
+6. **Risk Classification:** Assigns an estimated risk level using predefined rules.
+7. **Context-Aware Rules:** Considers selected options and targets for commands such as `rm`, `mv`, `cp`, and `chmod`.
+8. **Warning Messages:** Displays warnings about possible consequences.
+9. **Unsupported Command Handling:** Reports `UNKNOWN` when no matching rule is available.
+10. **Complex Syntax Detection:** Flags certain pipelines, redirection, command chaining, and variable expansion for manual review.
+11. **Parsing Error Handling:** Reports invalid quotation or parsing problems.
+12. **Unit Testing:** Uses Python's built-in `unittest` framework to check expected behavior.
 
-### Commands Supported by the Initial Prototype
+### Commands Covered by the Current Rules
 
-| Command | Likely Action | Estimated Risk |
+| Command | Likely Action | Typical Estimated Risk |
 |---|---|---|
-| `pwd` | Inspect the current directory | LOW |
+| `pwd` | Display the current directory | LOW |
 | `ls` | List directory contents | LOW |
-| `rm` | Delete files or directories | HIGH |
-| `mv` | Move or rename files | MEDIUM |
-| `cp` | Copy files | MEDIUM |
+| `cat` | Display file contents | LOW |
+| `grep` | Search text | LOW |
+| `find` | Search for files and directories | LOW or HIGH, depending on action options |
+| `rm` | Remove files or directories | MEDIUM or HIGH |
+| `mv` | Move or rename files | MEDIUM or HIGH |
+| `cp` | Copy files or directories | MEDIUM or HIGH |
+| `mkdir` | Create directories | LOW |
+| `touch` | Create files or update timestamps | LOW |
+| `chmod` | Change file permissions | MEDIUM or HIGH |
+| `chown` | Change file ownership | HIGH |
+| `sudo` | Run a command with elevated privileges | HIGH for recognized commands |
+| `kill`, `killall`, `pkill` | Send signals to processes | HIGH |
+| `apt`, `apt-get`, `brew`, `pip`, `pip3` | Manage software packages | MEDIUM or HIGH |
+| `curl`, `wget` | Transfer data over a network | MEDIUM |
+| Unsupported commands | No matching analysis rule | UNKNOWN |
 
-### Scope
+**Note:** These are approximate rule-based classifications, not guaranteed descriptions of every possible command behavior. The risk assigned depends on the rules implemented in the current version.
+
+### Risk Classification
+
+| Risk Level | Meaning |
+|---|---|
+| LOW | The recognized operation is generally informational or has a limited expected impact. |
+| MEDIUM | The operation may modify files, software, or system state. |
+| HIGH | The operation may be destructive, affect many files, change security permissions, or use elevated privileges. |
+| UNKNOWN | The application cannot confidently assess the supplied command. |
+
+A risk level is an estimate, not a guarantee of safety. Even a command marked LOW can have unexpected consequences in a particular environment.
+
+### Project Scope
 
 **In scope:**
+
 - Analyzing individual command strings.
-- Identifying supported commands and their likely actions.
-- Displaying target information and risk warnings.
+- Recognizing predefined command rules.
+- Identifying likely actions and target arguments.
+- Estimating risk and displaying warnings.
 - Handling empty input and parsing errors.
-- Testing the analyzer with predefined test cases.
+- Flagging selected forms of complex shell syntax.
+- Testing analyzer behavior with automated unit tests.
 
 **Out of scope:**
+
 - Executing commands automatically.
-- Supporting every possible shell command.
-- Fully interpreting complex shell syntax, pipelines, aliases, variables, and wildcards.
+- Supporting every possible Linux, Unix, or macOS command.
+- Fully interpreting arbitrary shell scripts.
+- Resolving aliases, wildcards, environment variables, or filesystem state.
 - Guaranteeing that a command is safe.
-- Replacing the operating system's shell or security tools.
+- Replacing shell documentation, ShellCheck, or other security tools.
 
 ### Success Criteria
 
-The project will be considered successful when:
-- Supported commands produce the expected impact report.
-- Potentially destructive commands receive appropriate warnings.
-- Unsupported commands are not automatically treated as safe.
-- Unit tests verify important analyzer behaviors.
-- The tool consistently avoids executing the supplied command.
+The project aims to:
+
+- Produce understandable reports for supported commands.
+- Display appropriate warnings for potentially destructive operations.
+- Avoid treating unsupported commands as automatically safe.
+- Identify selected cases where command analysis is incomplete.
+- Verify important behaviors using automated tests.
+- Never execute the supplied command as part of its analysis.
 
 ---
 
@@ -143,210 +195,299 @@ The project will be considered successful when:
 | Technology | Purpose |
 |---|---|
 | Python 3 | Main programming language |
-| `argparse` | Handles command-line arguments and help information |
-| `shlex` | Splits command strings into tokens |
-| `unittest` | Tests the command analyzer |
+| `argparse` | Command-line argument handling |
+| `shlex` | Tokenizing simple command strings |
+| `re` | Detecting selected shell syntax and variable patterns |
+| `dataclasses` | Organizing command impact report data |
+| `unittest` | Automated testing |
 | Git and GitHub | Version control and source-code hosting |
-| VS Code | Development environment |
+| Visual Studio Code | Development environment |
+| macOS / Linux terminal | Running and testing the application |
 
 ### Why Python?
 
-Python provides a simple way to build command-line applications and includes standard-library modules for argument parsing, string processing, and automated testing. This allows the initial prototype to be developed without requiring external packages.
+Python provides built-in modules for argument parsing, string processing, and testing. This makes it suitable for developing a lightweight command-line prototype without requiring a large framework or third-party dependencies.
 
-### Project Files
+### Dependencies
 
-| File or Directory | Purpose |
-|---|---|
-| `cmdtrace.py` | Contains the main command analyzer and command-line interface |
-| `test_cmdtrace.py` | Contains automated unit tests |
-| `__pycache__/` | Python-generated cache directory; it is not source code required for the project |
+The current implementation uses Python's standard library. No additional Python packages are required.
 
 ---
 
 ## 5. Architecture
 
-### Architecture Diagram
+The application follows a simple rule-based analysis workflow.
 
 ```mermaid
 flowchart TD
-    A[User enters command string] --> B[Parse command-line input]
-    B --> C[Split command using shlex]
-    C --> D{Input valid?}
-    D -->|No| E[Display parsing or input warning]
-    D -->|Yes| F[Identify command]
-    F --> G{Command supported?}
-    G -->|Yes| H[Determine action and target]
-    H --> I[Assign estimated risk]
-    I --> J[Generate impact report]
-    G -->|No| K[Report unsupported command]
-    K --> J
-    E --> L[End]
-    J --> L
+    A[User enters command text] --> B[argparse]
+    B --> C[Check input]
+    C --> D[Detect complex syntax]
+    D --> E[Tokenize using shlex]
+    E --> F[Match predefined rules]
+    F --> G[Identify action and target]
+    G --> H[Estimate risk]
+    H --> I[Generate impact report]
+    I --> J[Display report in terminal]
 ```
 
-### Main Components
+### Components
 
-**1. Command-Line Interface**
+| Component | Responsibility | File |
+|---|---|---|
+| Command-line interface | Accepts command text and provides help and version information. | `cmdtrace.py` |
+| Syntax checks | Detects selected complex shell syntax and variable patterns. | `cmdtrace.py` |
+| Command analyzer | Matches recognized commands against predefined rules. | `cmdtrace.py` |
+| Risk assessment | Assigns an estimated risk and creates warning messages. | `cmdtrace.py` |
+| Impact report | Formats the analysis result for terminal output. | `cmdtrace.py` |
+| Test suite | Verifies expected analyzer behavior. | `test_cmdtrace.py` |
 
-Accepts the command string from the user and displays the analysis report.
+### How the Application Works
 
-**2. Command Parser**
+1. The user supplies a command as a quoted string.
+2. `argparse` processes the command-line arguments.
+3. The application checks for selected complex shell syntax and variable expansion.
+4. `shlex.split()` tokenizes simple command input without executing it.
+5. The analyzer matches the command against predefined rules.
+6. The rules examine selected options and target arguments.
+7. The application assigns an estimated risk level and warning.
+8. The report is printed in the terminal.
 
-Uses `shlex.split()` to split the command string into a command name and arguments. Parsing errors are handled without executing the input.
+### Example Output
 
-**3. Command Analyzer**
+Command:
 
-Checks the command name against predefined rules for supported commands, such as `pwd`, `ls`, `rm`, `mv`, and `cp`.
+```bash
+python3 cmdtrace.py "mv file.txt ./temp/"
+```
 
-**4. Risk Classification**
+Example report:
 
-Assigns a predefined risk level according to the identified command. The classification is an estimate and does not guarantee safety.
+```text
+=== cmdtrace: Command Impact Report ===
+Command:   mv file.txt ./temp/
+Action:    Move or rename files
+Target:    file.txt, ./temp/
+Risk:      MEDIUM
+Warning:   Files may be moved or an existing destination may be overwritten.
+Execution: Not performed.
+```
 
-**5. Report Generator**
+The exact warning and classification depend on the rules in the current implementation.
 
-Displays the original command, likely action, target, risk level, warning, and execution status.
+### Error and Unsupported Input Handling
 
-**6. Unit Tests**
+| Situation | Expected behavior |
+|---|---|
+| No command is supplied | Displays usage instructions. |
+| Quotation marks are unmatched | Reports a parsing problem. |
+| The command has no matching rule | Returns `UNKNOWN`. |
+| A pipeline or redirection is detected | Flags the input as complex and returns `UNKNOWN`. |
+| A variable reference is detected | Flags the input as variable-dependent and returns `UNKNOWN`. |
 
-The `test_cmdtrace.py` file checks whether the analyzer returns expected results for selected inputs.
+### Safety Approach
 
-### Data Flow
+The analyzer treats input as text and does not pass it to a shell for execution. This is intended to prevent the analysis process from performing the action described by the command.
 
-1. The user supplies a command string.
-2. The program parses the input.
-3. The command name and arguments are identified.
-4. The analyzer applies the corresponding predefined rule.
-5. The program prepares an impact report.
-6. The report is displayed without executing the original command.
+However, this does not make `cmdtrace` a complete security scanner or a guarantee that the command is safe to execute separately.
 
 ---
 
-## 6. Usage
+## 6. Installation and Usage
 
-### Prerequisites
+### Requirements
 
-- Python 3 installed.
-- Git installed if cloning the repository.
-- A terminal or VS Code terminal.
+- Python 3.
+- A terminal.
+- The project files `cmdtrace.py` and `test_cmdtrace.py`.
 
-### Installation
+No third-party packages are required.
 
-Clone the repository and navigate into the project directory:
+### Clone the Repository
 
 ```bash
 git clone https://github.com/Ompro24/LInux-Command-Assignment.git
 cd LInux-Command-Assignment
 ```
 
-### Command Syntax
+### Run the Application
+
+General syntax:
 
 ```bash
 python3 cmdtrace.py "command to analyze"
 ```
 
-Enclose the command in quotation marks so that the program receives it as a single input string.
-
-### Example 1: Analyze the Current Directory Command
-
-**Input:**
+**Example 1: Display the current directory**
 
 ```bash
 python3 cmdtrace.py "pwd"
 ```
 
-The program identifies the likely purpose of the command and displays its estimated risk level.
+**Example 2: List directory contents**
 
-### Example 2: Analyze a File-Movement Command
+```bash
+python3 cmdtrace.py "ls -la"
+```
 
-**Input:**
+**Example 3: Analyze a file deletion command**
+
+```bash
+python3 cmdtrace.py "rm -rf old_folder"
+```
+
+**Example 4: Analyze a file movement command**
 
 ```bash
 python3 cmdtrace.py "mv file.txt ./temp/"
 ```
 
-**Sample Output:**
-
-```text
-=== cmdtrace: Command Impact Report ===
-Command: mv file.txt ./temp/
-Action:  Move or rename files
-Target:  file.txt, ./temp/
-Risk:    MEDIUM
-Warning: Files may be moved or overwritten.
-Execution: Not performed.
-```
-
-This output is based on the current prototype's observed behavior.
-
-### Example 3: Analyze a File-Deletion Command
-
-**Input:**
+**Example 5: Analyze a permission change**
 
 ```bash
-python3 cmdtrace.py "rm -rf ./temp"
+python3 cmdtrace.py "chmod 777 file.txt"
 ```
 
-The program is designed to identify the deletion operation, classify it as high risk, and display a warning about potentially irreversible deletion.
-
-The command is analyzed as text and is not executed by `cmdtrace`.
-
-### Example 4: Analyze an Unsupported Command
-
-**Input:**
+**Example 6: Analyze a pipeline**
 
 ```bash
-python3 cmdtrace.py "git status"
+python3 cmdtrace.py "cat file.txt | grep secret"
 ```
 
-If the command is unsupported, the program reports that it cannot analyze the command and assigns an unknown risk level.
+The pipeline example should be flagged as complex syntax because this prototype does not fully interpret pipelines.
 
-### Displaying Help
+### Available CLI Options
 
-Run:
+Display help:
 
 ```bash
 python3 cmdtrace.py --help
 ```
 
-This displays the usage information provided by the command-line argument parser.
+Display the version:
 
-### Running Unit Tests
+```bash
+python3 cmdtrace.py --version
+```
 
-Run the automated tests using:
+### Important Usage Notes
+
+- Enclose the command in quotation marks when passing it to `cmdtrace`.
+- `cmdtrace` analyzes the text; it does not run the supplied command.
+- An `UNKNOWN` result means the analyzer could not confidently assess the input.
+- Do not interpret a LOW or MEDIUM label as proof that a command is safe.
+- Review the relevant command documentation before executing unfamiliar or potentially destructive commands.
+
+---
+
+## 7. Testing
+
+The project uses Python's built-in `unittest` framework.
+
+### Run the Test Suite
+
+From the project directory, execute:
 
 ```bash
 python3 -m unittest -v test_cmdtrace.py
 ```
 
-The current test file checks:
-- Whether `pwd` receives a low-risk classification.
-- Whether `rm` receives a high-risk classification.
-- Whether an empty command receives an unknown-risk classification.
+### Test Coverage
 
-A test passes when the actual result matches the expected result.
+The test suite checks:
 
-### Limitations
+- Low-risk informational commands.
+- Medium-risk file operations.
+- High-risk recursive deletion.
+- Permission changes involving broad permissions.
+- Commands run through `sudo`.
+- Unsupported commands.
+- Empty input.
+- Pipelines and redirection.
+- Variable references.
+- Unmatched quotation marks.
+- Confirmation that the report states execution was not performed.
 
-- Risk levels are estimates and are not guarantees of safety.
-- Complex shell syntax may not be interpreted correctly.
-- Target identification is based on basic argument parsing.
-- Unsupported commands require additional analysis rules.
-- The tool does not execute commands or modify files.
+### Expected Result
+
+The test suite included with this version contains 15 tests.
+
+A successful run should finish with a summary similar to:
+
+```text
+Ran 15 tests
+
+OK
+```
+
+The exact execution time and terminal formatting may vary.
+
+Automated tests verify the implemented rules and expected outputs. They do not prove that every possible shell command is correctly analyzed.
 
 ---
 
-## 7. References
+## 8. Limitations and Future Scope
+
+### Current Limitations
+
+1. **Rule-based analysis:** The application depends on predefined rules and does not understand every command.
+2. **Limited command coverage:** Only commands with explicit rules receive a meaningful classification.
+3. **Incomplete shell parsing:** `shlex` tokenizes command text but is not a full shell interpreter.
+4. **Variable expansion:** The application does not determine the actual values of environment variables.
+5. **Complex expressions:** Pipelines, command chaining, redirection, and command substitution are flagged rather than fully interpreted.
+6. **Context dependence:** The analyzer does not inspect filesystem contents, permissions, aliases, current directory, or system configuration.
+7. **Platform differences:** Command options and behavior can differ between Linux, Unix, and macOS.
+8. **Risk estimation:** Risk levels are heuristic classifications and cannot guarantee that an operation is safe.
+
+### Future Enhancements
+
+The following are possible future improvements and are not claimed as completed features:
+
+- Add more command-specific rules and test cases.
+- Improve option and target parsing.
+- Explain why each risk level was assigned.
+- Add structured JSON output.
+- Separate command rules into a maintainable rule registry.
+- Improve handling of supported subsets of shell syntax.
+- Add additional tests for edge cases and platform differences.
+- Consider integration with documentation or command-reference resources.
+
+Future improvements should preserve the project's central principle: analyze command text without executing it.
+
+---
+
+## 9. Team Members
+
+**Om M Rane**
+
+- Project development
+- Command analysis and risk classification
+- Testing and documentation
+
+**Jitesh Vishwakarma**
+
+- Project development
+- Command analysis and testing
+- Documentation and project review
+
+---
+
+## 10. References
 
 1. Python Documentation — `argparse`: https://docs.python.org/3/library/argparse.html
 2. Python Documentation — `shlex`: https://docs.python.org/3/library/shlex.html
-3. Python Documentation — `unittest`: https://docs.python.org/3/library/unittest.html
-4. ShellCheck: https://www.shellcheck.net/
-5. ShellCheck GitHub Repository: https://github.com/koalaman/shellcheck
-6. tldr Pages: https://tldr.sh/
-7. tldr GitHub Repository: https://github.com/tldr-pages/tldr
-8. ExplainShell: https://explainshell.com/
-9. Project Repository: https://github.com/Ompro24/LInux-Command-Assignment
+3. Python Documentation — `re`: https://docs.python.org/3/library/re.html
+4. Python Documentation — `dataclasses`: https://docs.python.org/3/library/dataclasses.html
+5. Python Documentation — `unittest`: https://docs.python.org/3/library/unittest.html
+6. ShellCheck: https://www.shellcheck.net/
+7. ShellCheck GitHub Repository: https://github.com/koalaman/shellcheck
+8. tldr Pages: https://tldr.sh/
+9. tldr GitHub Repository: https://github.com/tldr-pages/tldr
+10. ExplainShell: https://explainshell.com/
+11. Linux manual pages: https://man7.org/linux/man-pages/
 
 ---
 
-**Project Note:** `cmdtrace` is an initial prototype intended for educational use. Its output depends on predefined rules and basic command parsing. Users should independently verify commands before executing them.
+**Project:** `cmdtrace` — Command Impact Predictor  
+**Team:** Om M Rane and Jitesh Vishwakarma  
+**Repository:** https://github.com/Ompro24/LInux-Command-Assignment
