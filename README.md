@@ -1,9 +1,10 @@
+
 # `cmdtrace` — Command Impact Predictor
 
 > `cmdtrace` analyzes a shell command and explains its likely impact and risk before you run it.
 
-**Team:** Om M Rane , Jitesh Vishwakarma  
-**Repository:** https://github.com/Ompro24/LInux-Command-Assignment    
+**Team:** Om M Rane, Jitesh Vishwakarma  
+**Repository:** https://github.com/Ompro24/LInux-Command-Assignment  
 **Date:** 27-10-2026
 
 ---
@@ -16,12 +17,11 @@ When working in the terminal, it is easy to run a command without fully understa
 
 A user may inspect a command manually, check its help page, and inspect the target path before deciding whether to run it. For example:
 
-```bash 
+```bash
 pwd
 ls -la
 mkdir -p ./temp
 ls -la ./temp
-```
 ```
 
 **Important:** Do not run a destructive example just to collect evidence. Use a harmless test directory if you need to demonstrate file-related behavior.
@@ -34,12 +34,11 @@ Run the following on your own machine and replace the placeholder with your real
 ls -la ./temp
 ```
 
-```Output
+```text
 total 0
 drwxr-xr-x   2 om  staff   64 Oct 28 08:45 .
 drwxr-x---+  XX om  staff  XXX Oct 28 08:45 ..
 ```
-
 
 **How often and what it costs:** [I sometimes need to check terminal commands before running them, especially when I am unsure which files or directories they may affect. This takes extra time because I need to read the command, check its options, and inspect the target path to avoid making unwanted changes.]
 
@@ -62,6 +61,7 @@ Existing tools already provide command explanations and shell-script analysis. W
 | ExplainShell | [Official website](https://explainshell.com/) and [GitHub search](https://github.com/search?q=explain-shell&type=repositories) | Breaks down shell commands and explains their components using manual-page information. | It focuses on explaining command syntax; our proposed tool aims to provide a concise report of the likely action, target, and risk before execution. |
 
 **Testing note:** We explored these tools through their websites. We did not install and run them from the terminal during these tests. Any differences described above should be confirmed against the actual behavior observed during testing before final submission.
+
 ### Evidence of trying them
 
 We tested three existing tools through their websites to understand their functionality and compare them with our proposed `cmdtrace` tool.
@@ -110,10 +110,10 @@ ShellCheck helps identify common shell-script mistakes, tldr provides practical 
 - [ ] npm / PyPI — search for existing command-line tools or libraries related to command analysis and safety.
 - [ ] Asked a human: [Add the classmate's name or role and their actual response after asking them about this problem.]
 
-
 ### The gap, in one sentence
 
 Existing tools can identify shell-script mistakes, provide command examples, and explain command syntax, but `cmdtrace` aims to combine command-specific action identification, target-path information, and risk warnings in one concise report before execution, without executing the command.
+
 ---
 
 ## 3. What we are building
@@ -136,6 +136,7 @@ Existing tools can identify shell-script mistakes, provide command examples, and
 ### How we will know it worked
 
 This tool is successful if it converts a manually inspected shell command into one concise impact report showing the command's likely action, target, risk level, and warning before execution. We aim to correctly classify at least 20 documented test cases, including harmless, potentially destructive, invalid, and unsupported commands. The tool must never execute the command being analyzed, and we will consider the project successful if our team finds it useful for understanding commands and avoiding accidental changes even after the assignment ends.
+
 ---
 
 ## 4. Tech stack
