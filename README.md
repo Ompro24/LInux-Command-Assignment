@@ -200,7 +200,129 @@ The user supplies a shell command as a quoted string through the command-line in
 | The command is not supported. | Displays an `UNKNOWN` risk level and warns that the command has not been analyzed. |
 | The command contains complex syntax or ambiguous targets. | Warns that the analysis may be incomplete instead of claiming the command is safe. |
 
+
 ## 6. Usage
+
+`cmdtrace` is a Python command-line tool that analyzes shell commands and displays their likely action, target, risk level, and warning without executing them.
+
+### Prerequisites
+
+- Python 3 installed.
+- Git installed if cloning the repository.
+- A terminal or VS Code terminal.
+
+### Installation
+
+Clone the repository and enter the project directory:
+
+```bash
+git clone https://github.com/Ompro24/LInux-Command-Assignment.git
+cd LInux-Command-Assignment
+```
+
+### Running the Program
+
+Use the following syntax:
+
+```bash
+python3 cmdtrace.py "command to analyze"
+```
+
+Enclose the command in quotation marks so that the program receives it as a single input.
+
+### Example 1: Analyze a Directory Command
+
+**Input:**
+
+```bash
+python3 cmdtrace.py "pwd"
+```
+
+The program identifies the command's likely purpose and displays its estimated risk level.
+
+### Example 2: Analyze a File-Movement Command
+
+**Input:**
+
+```bash
+python3 cmdtrace.py "mv file.txt ./temp/"
+```
+
+**Output:**
+
+```text
+=== cmdtrace: Command Impact Report ===
+Command: mv file.txt ./temp/
+Action:  Move or rename files
+Target:  file.txt, ./temp/
+Risk:    MEDIUM
+Warning: Files may be moved or overwritten.
+Execution: Not performed.
+```
+
+This example is based on the output produced by the current project in the development environment.
+
+### Example 3: Analyze a File-Deletion Command
+
+**Input:**
+
+```bash
+python3 cmdtrace.py "rm -rf ./temp"
+```
+
+The program is designed to identify the deletion operation, assign a high-risk level, and warn that deletion may be difficult or impossible to undo.
+
+**Important:** The command is analyzed as text. It is not executed by `cmdtrace`.
+
+### Example 4: Analyze an Unsupported Command
+
+**Input:**
+
+```bash
+python3 cmdtrace.py "git status"
+```
+
+If the command is not supported by the analyzer, the program reports that it cannot analyze the command and assigns an unknown risk level.
+
+### Supported Commands
+
+The current prototype includes analysis rules for the following commands:
+
+| Command | Description | Estimated Risk |
+|---|---|---|
+| `pwd` | Inspect the current directory | LOW |
+| `ls` | List directory contents | LOW |
+| `rm` | Delete files or directories | HIGH |
+| `mv` | Move or rename files | MEDIUM |
+| `cp` | Copy files | MEDIUM |
+
+Unsupported commands are reported with an unknown risk level.
+
+### Running Unit Tests
+
+The project includes `test_cmdtrace.py`, which checks the behavior of the command analyzer.
+
+Run the tests using:
+
+```bash
+python3 -m unittest -v test_cmdtrace.py
+```
+
+The current test file checks:
+
+- Whether `pwd` receives a low-risk classification.
+- Whether `rm` receives a high-risk classification.
+- Whether an empty command receives an unknown-risk classification.
+
+A test passes when the actual result matches the expected result.
+
+### Limitations
+
+- Risk levels are estimates and do not guarantee that a command is safe.
+- Complex shell syntax, variables, pipelines, aliases, and wildcards may not be interpreted correctly.
+- Unsupported commands require additional analysis rules.
+- The tool does not execute shell commands or make changes to files.
+
 
 ### Synopsis
 
@@ -213,7 +335,6 @@ python3 cmdtrace.py [options] "command to inspect"
 | Flag | Long form | What it does | Default |
 |---|---|---|---|
 | `-h` | `--help` | Displays usage instructions and exits. | — |
-| `-v` | `--verbose` | Reserved for future detailed analysis output; not implemented yet. | Off |
 | — | — | The command to analyze must be provided as a quoted argument. | Required |
 
 **Note:** The initial version does not need a `--dry-run` flag because `cmdtrace` only analyzes the supplied command and never executes it. This ensures that the tool does not perform the actions it describes.
